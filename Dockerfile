@@ -1,5 +1,5 @@
-# Use Ubuntu 22.04 as base image
-FROM ubuntu:22.04
+# Use Ubuntu 25.10 as base image
+FROM ubuntu:25.10
 
 # Set environment variables to avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -9,14 +9,12 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
     curl \
+    opam \
     git \
     autoconf \
     pkg-config \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-# Get latest opam 
-RUN echo "/usr/bin" | sh -c "sh <(curl -fsSL https://opam.ocaml.org/install.sh) --fresh --no-backup"
 
 # Create a non-root user for opam operations
 RUN useradd -m -s /bin/bash ocaml-user
