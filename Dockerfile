@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Get latest opam 
-RUN echo "/usr/bin" | sh -c "sh <(curl -fsSL https://opam.ocaml.org/install.sh) --fresh --no-backup
+RUN echo "/usr/bin" | sh -c "sh <(curl -fsSL https://opam.ocaml.org/install.sh) --fresh --no-backup"
 
 # Create a non-root user for opam operations
 RUN useradd -m -s /bin/bash ocaml-user
