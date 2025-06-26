@@ -6,7 +6,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Update package list and install required dependencies
 RUN apt-get update && apt-get install -y \
-    opam \
     build-essential \
     gcc \
     curl \
@@ -15,6 +14,9 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Get latest opam 
+RUN bash -c "sh <(curl -fsSL https://opam.ocaml.org/install.sh) --fresh --no-backup"
 
 # Create a non-root user for opam operations
 RUN useradd -m -s /bin/bash ocaml-user
