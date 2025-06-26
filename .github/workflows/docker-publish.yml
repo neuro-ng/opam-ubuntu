@@ -180,6 +180,9 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
+      # Note: This step requires DISPATCH_TOKEN secret to be configured
+      # To set up: Go to Settings > Secrets and variables > Actions > New repository secret
+      # Create a Personal Access Token with 'repo' scope and add it as DISPATCH_TOKEN
       - name: Repository Dispatch to ox-fast-mcp-build-image
         uses: peter-evans/repository-dispatch@v3
         with:
