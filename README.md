@@ -3,13 +3,13 @@
 [![Build and Publish opam-ubuntu](https://github.com/neuro-ng/opam-ubuntu/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/neuro-ng/opam-ubuntu/actions/workflows/docker-publish.yml)
 [![Docker Image](https://ghcr-badge.egpl.dev/neuro-ng/opam-ubuntu/latest_tag?trim=major&label=latest)](https://github.com/neuro-ng/opam-ubuntu/pkgs/container/opam-ubuntu)
 
-A foundational Docker image for OCaml development with Ubuntu 22.04 and opam pre-installed. This serves as a base image for more specialized OCaml environments.
+A foundational Docker image for OCaml development with Ubuntu 25.04 and opam pre-installed. This serves as a base image for more specialized OCaml environments.
 
 ## 🎯 Purpose
 
 This image provides a clean, optimized foundation for OCaml development containers by pre-installing and configuring:
 
-- **Ubuntu 22.04 LTS** - Stable, well-supported base system
+- **Ubuntu 25.04 LTS** - Stable, well-supported base system
 - **opam** - OCaml package manager, properly initialized
 - **Build tools** - gcc, build-essential, autoconf, pkg-config
 - **Development utilities** - curl, git
@@ -222,7 +222,7 @@ Contributions are welcome! This base image should remain minimal and focused on 
 
 ### Guidelines
 - Keep the image minimal - only essential packages
-- Maintain Ubuntu 22.04 LTS compatibility
+- Maintain Ubuntu 25.04 LTS compatibility
 - Ensure multi-platform support (amd64/arm64)
 - Test changes with common OCaml workflows
 
