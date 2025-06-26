@@ -1,0 +1,184 @@
+name: Build and Publish opam-ubuntu Base Image
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Rebuild weekly on Sundays at 2 AM UTC to get Ubuntu security updates
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=schedule,pattern={{date 'YYYY-MM-DD'}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test the base image
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ fromJSON(steps.meta.outputs.json).tags[0] }} \
+            bash -c "opam --version && echo 'opam-ubuntu base image test passed!'"
+
+      - name: Test opam functionality
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ fromJSON(steps.meta.outputs.json).tags[0] }} \
+            bash -c "opam switch list && opam update --all && echo 'opam functionality test passed!'"
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name != 'pull_request'
+    
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  generate-usage-docs:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name != 'pull_request'
+    
+    steps:
+      - name: Generate usage documentation
+        run: |
+          cat << 'EOF' > BASE_IMAGE_USAGE.md
+          # opam-ubuntu Base Image Usage
+          
+          This base image provides a foundational Ubuntu 22.04 environment with opam pre-configured for OCaml development.
+          
+          ## Quick Start
+          
+          ```bash
+          # Pull the latest base image
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # Use as base for your own Dockerfile
+          FROM ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # Install your OCaml version and packages
+          RUN opam switch create 5.1.0 && \
+              eval $(opam env) && \
+              opam install dune utop
+          ```
+          
+          ## Integration with ox-fast-mcp-build-image
+          
+          This base image is specifically designed to be used by the ox-fast-mcp-build-image:
+          
+          ```dockerfile
+          FROM ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # OxCaml-specific setup builds on this foundation
+          RUN opam switch create 5.2.0+ox --repos ox=git+https://github.com/oxcaml/opam-repository.git,default
+          ```
+          
+          ## Available Tags
+          
+          - `latest` - Latest build from main branch
+          - `main` - Latest from main branch
+          - `YYYY-MM-DD` - Weekly scheduled builds with Ubuntu updates
+          - `v1.0.0` - Version releases
+          
+          ## What's Pre-installed
+          
+          - Ubuntu 22.04 LTS base
+          - opam package manager (initialized)
+          - Build essentials (gcc, make, autoconf, pkg-config)
+          - Development tools (git, curl)
+          - Non-root user setup (ocaml-user)
+          
+          ## Build Optimization
+          
+          This base image is rebuilt weekly to include Ubuntu security updates, providing:
+          - Fresh security patches
+          - Updated system packages
+          - Cached opam initialization
+          - Optimized layer structure for downstream builds
+          EOF
+          
+          echo "Generated base image usage documentation:"
+          cat BASE_IMAGE_USAGE.md
+
+      - name: Upload usage documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: base-image-usage-docs
+          path: BASE_IMAGE_USAGE.md
+
+  notify-downstream:
+    runs-on: ubuntu-latest
+    needs: [build-and-push, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Repository Dispatch to ox-fast-mcp-build-image
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DISPATCH_TOKEN }}
+          repository: neuro-ng/ox-fast-mcp-build-image
+          event-type: base-image-updated
+          client-payload: '{"base_image_tag": "latest", "triggered_by": "${{ github.sha }}"}' 
