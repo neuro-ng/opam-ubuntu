@@ -69,13 +69,13 @@ jobs:
       - name: Test the base image
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         run: |
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ fromJSON(steps.meta.outputs.json).tags[0] }} \
+          docker run --rm ${{ fromJSON(steps.meta.outputs.json).tags[0] }} \
             bash -c "opam --version && echo 'opam-ubuntu base image test passed!'"
 
       - name: Test opam functionality
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         run: |
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ fromJSON(steps.meta.outputs.json).tags[0] }} \
+          docker run --rm ${{ fromJSON(steps.meta.outputs.json).tags[0] }} \
             bash -c "opam switch list && opam update --all && echo 'opam functionality test passed!'"
 
   security-scan:
