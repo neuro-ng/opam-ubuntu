@@ -1,5 +1,5 @@
-# Use Ubuntu 25.10 as base image
-FROM ubuntu:25.10
+# Use Ubuntu 25.04 as base image
+FROM ubuntu:25.04
 
 # Set environment variables to avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
