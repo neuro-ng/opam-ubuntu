@@ -52,7 +52,8 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest,enable={{is_default_branch}}
-            type=schedule,pattern={{date 'YYYY-MM-DD'}}
+            type=raw,value={{date 'YYYYMMDD'}}
+            type=sha,format=short
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -113,7 +114,7 @@ jobs:
           cat << 'EOF' > BASE_IMAGE_USAGE.md
           # opam-ubuntu Base Image Usage
           
-          This base image provides a foundational Ubuntu 22.04 environment with opam pre-configured for OCaml development.
+          This base image provides a foundational Ubuntu 25.04 environment with opam pre-configured for OCaml development.
           
           ## Quick Start
           
@@ -150,7 +151,7 @@ jobs:
           
           ## What's Pre-installed
           
-          - Ubuntu 22.04 LTS base
+          - Ubuntu 25.04 LTS base
           - opam package manager (initialized)
           - Build essentials (gcc, make, autoconf, pkg-config)
           - Development tools (git, curl)
